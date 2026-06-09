@@ -1,10 +1,9 @@
 """
 query_lhs.py — Look up a Latin hypercube design in the pickle database.
 
-Deterministic (D) step. Owns the only dependency on numpy in the project: it
-unpickles ndarrays from the database, normalizes them columnwise to [0, 1],
-and returns the result as plain Python list-of-lists so downstream scripts
-(save_csv, convert_csv) and tests can run on stdlib alone.
+Deterministic (D) step. Stdlib only — no numpy / pandas / torch. The pickle
+database stores designs as list-of-lists of ints; lookup() normalizes them
+columnwise to [0, 1] before returning.
 
 Contract: see ../README.md sections 3, 4, 5.
 """
@@ -59,9 +58,6 @@ def build_key(n_points: int, n_dims: int) -> str:
 
 
 def load_db(path: Path = LHS_DB_PATH) -> dict:
-    # numpy is imported lazily and only here, so that other modules don't pull
-    # it in. Unpickling ndarrays requires numpy to be importable.
-    import numpy  # noqa: F401
     try:
         with open(path, "rb") as f:
             return pickle.load(f)
@@ -102,13 +98,6 @@ def nearest_n_points(candidates: list[int], target: int, k: int = 3) -> list[int
     return ordered[:k]
 
 
-def _to_list_of_lists(array_like) -> list[list[float]]:
-    # Accepts numpy.ndarray or already a sequence of sequences.
-    if hasattr(array_like, "tolist"):
-        return array_like.tolist()
-    return [list(row) for row in array_like]
-
-
 def normalize(rows: list[list[float]]) -> list[list[float]]:
     """Columnwise min-max scale each column to [0, 1].
 
@@ -142,9 +131,8 @@ def lookup(n_points: int, n_dims: int, db: Optional[dict] = None) -> LookupResul
 
     key = build_key(n_points, n_dims)
     if key in db:
-        raw = db[key]
-        shape = tuple(raw.shape) if hasattr(raw, "shape") else (len(raw), len(raw[0]))
-        rows = _to_list_of_lists(raw)
+        rows = db[key]
+        shape = (len(rows), len(rows[0]))
         return LookupSuccess(key=key, shape=shape, array=normalize(rows))
 
     points_at_dim = available_points_at_dim(db, n_dims)
