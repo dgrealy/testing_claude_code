@@ -112,7 +112,7 @@ See `eval_cases.json` for the full curated set of 21 cases. The five worth readi
 2. `happy_no_format_default_csv`: "I want an LHS with 40 points in 3 dimensions" → CSV delivered + followup ask.
 3. `missing_dims`: "give me 30 points for my LHS" → clarify, reason `missing_n_dims`.
 4. `vague_small`: "give me a small LHS in 4 dimensions" → clarify, reason `vague_size`. **Do not pick a number.**
-5. `missing_key_same_dim`: "75 points, 3 dimensions, numpy" → suggest nearby N at D=3.
+5. `missing_key_same_dim`: "7 points, 11 dimensions, numpy" → suggest nearby N at D=11 (the real DB has only n=4, 5, 6 at d=11).
 
 ## 7. What this skill does NOT do
 

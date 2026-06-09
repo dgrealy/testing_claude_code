@@ -1,6 +1,6 @@
 {
   "_comment": "Each case is the expected contents of the trace JSON after the skill processes the prompt. Fields not listed in 'expect' are not asserted on. Cases are organized by category. Run via evals/run_eval.py.",
-  "_db_assumptions_for_tests": "These cases assume the test fixture mini_lhs.p contains keys: dd2_nn20, dd3_nn40, dd3_nn50, dd3_nn100, dd4_nn50, dd5_nn100, dd7_nn50. n_dims values present: 2, 3, 4, 5, 7. n_dims NOT present: 1, 6, 8, 9, 10, 11+.",
+  "_db_assumptions": "These cases run the lhs-sampler skill against the real database optimal_lhs_database.p. Happy-path and clarification cases use designs that exist in the real DB. The missing-key cases use real gaps: dim=1 is entirely absent (used by missing_key_no_dim), and dim=11 only contains n=4,5,6 (used by missing_key_same_dim with n=7). Unit tests in evals/test_pipeline.py use the smaller test fixture evals/fixtures/mini_lhs.p, which has different coverage; the fixture's own assumptions are described in evals/fixtures/build_fixture.py.",
 
   "cases": [
     {
@@ -228,29 +228,29 @@
     {
       "id": "missing_key_same_dim",
       "category": "key_not_in_db",
-      "prompt": "75 points, 3 dimensions, numpy",
+      "prompt": "7 points, 11 dimensions, numpy",
       "expect": {
         "clarification_needed": true,
         "clarification_reason": "key_not_in_db_same_dim",
-        "parsed": {"n_points": 75, "n_dims": 3, "format": "numpy"},
-        "db_key_attempted": "dd3_nn75",
+        "parsed": {"n_points": 7, "n_dims": 11, "format": "numpy"},
+        "db_key_attempted": "dd11_nn7",
         "key_found": false,
-        "nearby_alternatives_at_dim": [40, 50, 100],
-        "_critical": "Must list nearby N values at n_dims=3, sorted by distance to 75. Closest 3: 50, 100, 40."
+        "nearby_alternatives_at_dim": [6, 5, 4],
+        "_critical": "Must list nearby N values at n_dims=11, sorted by distance to 7. Closest 3: 6, 5, 4."
       }
     },
     {
       "id": "missing_key_no_dim",
       "category": "key_not_in_db",
-      "prompt": "40 points, 11 dimensions",
+      "prompt": "40 points, 1 dimension",
       "expect": {
         "clarification_needed": true,
         "clarification_reason": "key_not_in_db_no_dim",
-        "parsed": {"n_points": 40, "n_dims": 11, "format": null},
-        "db_key_attempted": "dd11_nn40",
+        "parsed": {"n_points": 40, "n_dims": 1, "format": null},
+        "db_key_attempted": "dd1_nn40",
         "key_found": false,
         "nearby_alternatives": null,
-        "_critical": "Must NOT suggest designs at other dimensions. Must say no designs exist at n_dims=11."
+        "_critical": "Must NOT suggest designs at other dimensions. Must say no designs exist at n_dims=1."
       }
     }
   ]

@@ -44,6 +44,7 @@ Do these in order. Do not skip ahead.
 
 ## What "done" looks like
 
-- All unit tests in `evals/test_pipeline.py` pass.
+- All unit tests in `evals/test_pipeline.py` pass (currently 27/27).
 - `python evals/run_eval.py --mode=dry-run` prints all 21 cases without error.
-- A manual eval pass (running Claude-with-the-skill on the 21 prompts) produces traces, and `python evals/run_eval.py --mode=replay` shows ≥ 20/21 passing. The one that may be borderline is the parsing of compact notation `40x3` — flag it for human review if it doesn't pass; do not patch the spec.
+- A manual eval pass (running Claude-with-the-skill on the 21 prompts) produces traces in `traces/`, and `python evals/run_eval.py --mode=replay` shows 21/21 passing.
+- The `missing_key_*` cases are tuned to gaps in the real `optimal_lhs_database.p` (dim=1 absent; dim=11 only has n=4,5,6). If the database is swapped for one with different coverage, those two cases need to be retargeted.
