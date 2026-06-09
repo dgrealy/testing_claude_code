@@ -11,6 +11,8 @@ Retrieve a pre-computed Latin hypercube design from a pickle database and delive
 
 Looks up a design keyed by `dd<n_dims>_nn<n_points>` in a pickle file at the path defined in `scripts/query_lhs.py`. Returns the design as CSV, numpy, pandas, or pytorch. If anything is ambiguous or missing, asks the user before doing anything.
 
+**Important:** All script paths below are relative to the repo root (`/home/user/testing_claude_code`). Always run scripts as `python /home/user/testing_claude_code/scripts/<script>.py`, not as relative paths.
+
 ## Workflow
 
 ### Step 1: Parse the request
@@ -41,7 +43,7 @@ If none of these fire, proceed to step 3.
 
 ### Step 3: Look up the design
 
-Run `scripts/query_lhs.py` with the parsed `n_points` and `n_dims`. It returns one of:
+Run `python /home/user/testing_claude_code/scripts/query_lhs.py` with the parsed `n_points` and `n_dims`. It returns one of:
 
 - The ndarray, shape `(n_points, n_dims)` — proceed to step 4.
 - `KeyNotFoundSameDim(nearby=[…])` — clarify: list the closest 3 available `n_points` at this `n_dims`, ask the user to pick or revise. Do not proceed.
@@ -51,11 +53,11 @@ Run `scripts/query_lhs.py` with the parsed `n_points` and `n_dims`. It returns o
 
 | Requested format | Action |
 |---|---|
-| `csv` (explicit) | Run `scripts/save_csv.py`; surface the file with `present_files`. |
-| `numpy` | Run `scripts/save_csv.py` then `scripts/convert_csv.py --format numpy`; return the array. |
+| `csv` (explicit) | Run `python /home/user/testing_claude_code/scripts/save_csv.py`; surface the file with `present_files`. |
+| `numpy` | Run `python /home/user/testing_claude_code/scripts/save_csv.py` then `python /home/user/testing_claude_code/scripts/convert_csv.py --format numpy`; return the array. |
 | `pandas` | Same, with `--format pandas`. Columns are `x1, x2, …, xD`. |
 | `pytorch` | Same, with `--format pytorch`. dtype `float32`. |
-| Unspecified (default) | Run `scripts/save_csv.py`, surface the file, then ask: "Saved as CSV. Want it as numpy, pandas, or pytorch instead?" |
+| Unspecified (default) | Run `python /home/user/testing_claude_code/scripts/save_csv.py`, surface the file, then ask: "Saved as CSV. Want it as numpy, pandas, or pytorch instead?" |
 
 ### Step 5: Write the trace
 
@@ -63,7 +65,7 @@ Every run — success, clarification, or error — appends one JSON file to `tra
 
 ## Followup turns (format conversion)
 
-If the previous skill turn delivered a CSV and asked about format, and the user replies with a format name ("numpy please," "make it a tensor"), do **not** re-look-up the design. Run `scripts/convert_csv.py` on the existing CSV path (recorded in the previous trace's `csv_path` field) and return the converted form. Write a new trace with `followup_pending: false`.
+If the previous skill turn delivered a CSV and asked about format, and the user replies with a format name ("numpy please," "make it a tensor"), do **not** re-look-up the design. Run `python /home/user/testing_claude_code/scripts/convert_csv.py` on the existing CSV path (recorded in the previous trace's `csv_path` field) and return the converted form. Write a new trace with `followup_pending: false`.
 
 If the user replies with something other than a format ("yes," "thanks," or a new request), treat that turn as a new request and run the workflow from step 1.
 
@@ -76,8 +78,8 @@ If the user replies with something other than a format ("yes," "thanks," or a ne
 
 ## Scripts
 
-- `scripts/query_lhs.py` — lookup + nearby-alternatives
-- `scripts/save_csv.py` — ndarray → CSV in `/mnt/user-data/outputs/`
-- `scripts/convert_csv.py` — CSV → numpy | pandas | pytorch
+- `/home/user/testing_claude_code/scripts/query_lhs.py` — lookup + nearby-alternatives
+- `/home/user/testing_claude_code/scripts/save_csv.py` — ndarray → CSV in `/mnt/user-data/outputs/`
+- `/home/user/testing_claude_code/scripts/convert_csv.py` — CSV → numpy | pandas | pytorch
 
 See `README.md` for the full contract and `evals/eval_cases.json` for the curated test set.
