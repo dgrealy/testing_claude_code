@@ -36,7 +36,8 @@ def load_cases() -> list[dict]:
     return data["cases"]
 
 
-def find_trace_for_case(case_id: str, traces_dir: Path = TRACES_DIR) -> Optional[Path]:
+def find_trace_for_case(case_id: str, traces_dir: Path = TRACES_DIR,
+                        prompt: Optional[str] = None) -> Optional[Path]:
     if not traces_dir.exists():
         return None
     matches: list[tuple[float, Path]] = []
@@ -47,6 +48,8 @@ def find_trace_for_case(case_id: str, traces_dir: Path = TRACES_DIR) -> Optional
         except (OSError, json.JSONDecodeError):
             continue
         if trace.get("case_id") == case_id:
+            matches.append((p.stat().st_mtime, p))
+        elif prompt and trace.get("raw_request") == prompt:
             matches.append((p.stat().st_mtime, p))
     if not matches:
         return None
@@ -94,7 +97,7 @@ def assert_trace_matches(expect: dict, trace: dict) -> list[str]:
 
 def run_case(case: dict, traces_dir: Path = TRACES_DIR) -> CaseResult:
     case_id = case["id"]
-    trace_path = find_trace_for_case(case_id, traces_dir)
+    trace_path = find_trace_for_case(case_id, traces_dir, prompt=case.get("prompt"))
     if trace_path is None:
         return CaseResult(case_id, False, ["no trace found"], None)
     with open(trace_path, "r") as f:
