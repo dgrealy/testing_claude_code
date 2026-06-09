@@ -28,14 +28,16 @@ Trigger phrases that the skill must recognize as requests for this service: *Lat
 
 ### 3.1 Success
 
-A trace JSON is written to `traces/<timestamp>_<id>.json` regardless of outcome. On success:
+A trace JSON is written to `traces/<timestamp>_<id>.json` regardless of outcome. Every successful response is built from the design **after columnwise min-max normalization to [0, 1]** (performed inside `query_lhs.lookup()` — see section 5). On success:
 
-- **CSV** (default, or explicitly requested): file saved to `/mnt/user-data/outputs/lhs_dd<D>_nn<N>.csv`, surfaced to the user via `present_files`.
-- **numpy**: a `numpy.ndarray` of shape `(N, D)`, returned in-conversation.
-- **pandas**: a `DataFrame` of shape `(N, D)` with columns `x1, x2, …, xD`.
-- **pytorch**: a `torch.Tensor` of shape `(N, D)`, dtype `float32`.
+- **CSV** (default, or explicitly requested): file saved to `/mnt/user-data/outputs/lhs_dd<D>_nn<N>.csv`, surfaced to the user via `present_files`. Values are normalized.
+- **numpy**: a **string code snippet** of the form `x = np.array([[...], ...])`, returned in-conversation. The skill does not produce a live `numpy.ndarray`.
+- **pandas**: a **string code snippet** `x = pd.DataFrame([[...], ...], columns=['x1', ..., 'xD'])`.
+- **pytorch**: a **string code snippet** `x = torch.tensor([[...], ...], dtype=torch.float32)`.
 
-When format is **unspecified**, the default is CSV plus a followup question asking whether the user wants it as numpy, pandas, or pytorch. The skill does *not* eagerly produce both — CSV first, then conversion on a second turn if requested.
+The skill runs on stdlib Python only. The `numpy` / `pandas` / `pytorch` outputs are text the user can paste into their own environment. The only place `numpy` is imported is `scripts/query_lhs.py`, and only to unpickle the database.
+
+When format is **unspecified**, the default is CSV plus a followup question asking whether the user wants it rendered as numpy, pandas, or pytorch. The skill does *not* eagerly produce both — CSV first, then conversion on a second turn if requested.
 
 ### 3.2 Clarification
 
@@ -94,9 +96,10 @@ These are not heuristics; they are rules. The skill must follow them exactly.
 | Parse natural language → structured params | **L** (Claude, in-skill) | The skill prompt instructs Claude to extract and either populate the trace's `parsed` field or set `clarification_needed: true`. |
 | Build DB key from params | **D** | `f"dd{n_dims}_nn{n_points}"` in `query_lhs.py`. |
 | Look up key in pickle | **D** | `db[key]` in `query_lhs.py`. |
+| Normalize columns to [0, 1] | **D** | `normalize()` in `query_lhs.py`, called by `lookup()` before returning. |
 | Find nearby alternatives when key missing | **D** | Filter `db.keys()` by `n_dims`, return nearest `n_points` values. |
-| Save ndarray → CSV | **D** | `numpy.savetxt` in `save_csv.py`. |
-| Convert CSV → numpy / pandas / pytorch | **D** | Three branches in `convert_csv.py`. |
+| Save normalized rows → CSV | **D** | Stdlib `csv.writer` in `save_csv.py`. |
+| Render CSV → numpy / pandas / pytorch code snippet | **D** | Three branches in `convert_csv.py`. Output is a string, not a live object. |
 | Compose user-facing reply | **L** (thin) | Natural-language wrapper around structured outcome. |
 
 **Critical:** numbers and keys *never* pass through model judgment. The parser produces integers; everything downstream is code.
@@ -122,6 +125,12 @@ See `eval_cases.json` for the full curated set of 21 cases. The five worth readi
 ## 8. Configuration
 
 The pickle path is hardcoded as a module-level constant `LHS_DB_PATH` in `scripts/query_lhs.py`. To point at a different database, edit that file. No environment variables, no runtime arguments from the user.
+
+### 8.1 Dependencies
+
+The runtime skill is **stdlib-only**. Only `scripts/query_lhs.py` imports `numpy`, and only to unpickle the database (the pickle stores `numpy.ndarray` objects). All downstream work — normalization, CSV writing, code-snippet rendering — is plain Python.
+
+`evals/fixtures/build_fixture.py` uses `numpy` to build the test fixture; that script is run once, offline, and is not part of the skill's runtime path.
 
 ## 9. Ratchet rules (for future failures)
 

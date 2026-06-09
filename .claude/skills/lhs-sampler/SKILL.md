@@ -9,9 +9,12 @@ Retrieve a pre-computed Latin hypercube design from a pickle database and delive
 
 ## What this skill does
 
-Looks up a design keyed by `dd<n_dims>_nn<n_points>` in a pickle file at the path defined in `scripts/query_lhs.py`. Returns the design as CSV, numpy, pandas, or pytorch. If anything is ambiguous or missing, asks the user before doing anything.
+Looks up a design keyed by `dd<n_dims>_nn<n_points>` in a pickle file at the path defined in `scripts/query_lhs.py`, **normalizes each column to [0, 1]** inside `query_lhs.lookup()`, and delivers the result as CSV or as a code-snippet string for numpy / pandas / pytorch. If anything is ambiguous or missing, asks the user before doing anything.
 
-**Important:** All script paths below are relative to the repo root (`/home/user/testing_claude_code`). Always run scripts as `python /home/user/testing_claude_code/scripts/<script>.py`, not as relative paths.
+**Important:**
+
+- All script paths below are absolute (`/home/user/testing_claude_code/scripts/...`). Always invoke them with full paths so the skill works regardless of cwd.
+- The skill runs on stdlib Python only. The `numpy`, `pandas`, and `pytorch` formats are returned as **string code snippets** (e.g. `x = np.array([...])`), not as live objects. `query_lhs.py` imports `numpy` only to unpickle the database.
 
 ## Workflow
 
@@ -45,19 +48,23 @@ If none of these fire, proceed to step 3.
 
 Run `python /home/user/testing_claude_code/scripts/query_lhs.py` with the parsed `n_points` and `n_dims`. It returns one of:
 
-- The ndarray, shape `(n_points, n_dims)` — proceed to step 4.
-- `KeyNotFoundSameDim(nearby=[…])` — clarify: list the closest 3 available `n_points` at this `n_dims`, ask the user to pick or revise. Do not proceed.
-- `KeyNotFoundNoDim` — say: "I don't have any designs with `<n_dims>` dimensions in the database. The available dimensions are: `<list>`." Do not suggest substituting.
+- A `LookupSuccess` whose `.array` is the design normalized to `[0, 1]` columnwise, shape `(n_points, n_dims)` — proceed to step 4.
+- `LookupMissingSameDim(nearby=[…])` — clarify: list the closest 3 available `n_points` at this `n_dims`, ask the user to pick or revise. Do not proceed.
+- `LookupMissingNoDim` — say: "I don't have any designs with `<n_dims>` dimensions in the database. The available dimensions are: `<list>`." Do not suggest substituting.
+
+Normalization is part of the lookup, not a separate step. The CSV and all code-snippet outputs reflect the normalized values.
 
 ### Step 4: Deliver in the requested format
 
 | Requested format | Action |
 |---|---|
 | `csv` (explicit) | Run `python /home/user/testing_claude_code/scripts/save_csv.py`; surface the file with `present_files`. |
-| `numpy` | Run `python /home/user/testing_claude_code/scripts/save_csv.py` then `python /home/user/testing_claude_code/scripts/convert_csv.py --format numpy`; return the array. |
-| `pandas` | Same, with `--format pandas`. Columns are `x1, x2, …, xD`. |
-| `pytorch` | Same, with `--format pytorch`. dtype `float32`. |
+| `numpy` | Run `python /home/user/testing_claude_code/scripts/save_csv.py` then `python /home/user/testing_claude_code/scripts/convert_csv.py --format numpy`; the script prints a string of the form `x = np.array([...])`. Return that snippet inline. |
+| `pandas` | Same, with `--format pandas`. Prints `x = pd.DataFrame([...], columns=['x1', ..., 'xD'])`. |
+| `pytorch` | Same, with `--format pytorch`. Prints `x = torch.tensor([...], dtype=torch.float32)`. |
 | Unspecified (default) | Run `python /home/user/testing_claude_code/scripts/save_csv.py`, surface the file, then ask: "Saved as CSV. Want it as numpy, pandas, or pytorch instead?" |
+
+The numpy / pandas / pytorch outputs are **text** — code the user can paste into their own environment. The skill does not instantiate live array objects.
 
 ### Step 5: Write the trace
 
@@ -78,8 +85,8 @@ If the user replies with something other than a format ("yes," "thanks," or a ne
 
 ## Scripts
 
-- `/home/user/testing_claude_code/scripts/query_lhs.py` — lookup + nearby-alternatives
-- `/home/user/testing_claude_code/scripts/save_csv.py` — ndarray → CSV in `/mnt/user-data/outputs/`
-- `/home/user/testing_claude_code/scripts/convert_csv.py` — CSV → numpy | pandas | pytorch
+- `/home/user/testing_claude_code/scripts/query_lhs.py` — lookup + nearby-alternatives + columnwise normalization to [0, 1]. Only file that imports `numpy` (for unpickling).
+- `/home/user/testing_claude_code/scripts/save_csv.py` — normalized rows → CSV in `/mnt/user-data/outputs/` using stdlib `csv`.
+- `/home/user/testing_claude_code/scripts/convert_csv.py` — CSV → code-snippet string for `numpy` | `pandas` | `pytorch`. Stdlib only; does not import the target library.
 
 See `README.md` for the full contract and `evals/eval_cases.json` for the curated test set.

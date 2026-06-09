@@ -1,9 +1,10 @@
 """
 query_lhs.py — Look up a Latin hypercube design in the pickle database.
 
-This is a deterministic (D) step. The model never invokes the lookup logic
-directly — it calls this script with parsed integer params. All numeric and
-key-handling logic lives here.
+Deterministic (D) step. Owns the only dependency on numpy in the project: it
+unpickles ndarrays from the database, normalizes them columnwise to [0, 1],
+and returns the result as plain Python list-of-lists so downstream scripts
+(save_csv, convert_csv) and tests can run on stdlib alone.
 
 Contract: see ../README.md sections 3, 4, 5.
 """
@@ -29,7 +30,7 @@ _KEY_RE = re.compile(r"^dd(\d+)_nn(\d+)$")
 class LookupSuccess:
     key: str
     shape: tuple[int, int]
-    array: object = None
+    array: Optional[list[list[float]]] = None  # normalized, list-of-lists
     kind: str = "success"
 
 
@@ -58,6 +59,9 @@ def build_key(n_points: int, n_dims: int) -> str:
 
 
 def load_db(path: Path = LHS_DB_PATH) -> dict:
+    # numpy is imported lazily and only here, so that other modules don't pull
+    # it in. Unpickling ndarrays requires numpy to be importable.
+    import numpy  # noqa: F401
     try:
         with open(path, "rb") as f:
             return pickle.load(f)
@@ -98,6 +102,35 @@ def nearest_n_points(candidates: list[int], target: int, k: int = 3) -> list[int
     return ordered[:k]
 
 
+def _to_list_of_lists(array_like) -> list[list[float]]:
+    # Accepts numpy.ndarray or already a sequence of sequences.
+    if hasattr(array_like, "tolist"):
+        return array_like.tolist()
+    return [list(row) for row in array_like]
+
+
+def normalize(rows: list[list[float]]) -> list[list[float]]:
+    """Columnwise min-max scale each column to [0, 1].
+
+    If a column is constant (max == min), every entry is set to 0.0 to keep
+    output deterministic.
+    """
+    if not rows:
+        return []
+    n_cols = len(rows[0])
+    cols = [[r[j] for r in rows] for j in range(n_cols)]
+    mins = [min(c) for c in cols]
+    maxs = [max(c) for c in cols]
+    out: list[list[float]] = []
+    for r in rows:
+        normalized_row: list[float] = []
+        for j, v in enumerate(r):
+            span = maxs[j] - mins[j]
+            normalized_row.append(0.0 if span == 0 else (v - mins[j]) / span)
+        out.append(normalized_row)
+    return out
+
+
 def lookup(n_points: int, n_dims: int, db: Optional[dict] = None) -> LookupResult:
     if not isinstance(n_points, int) or isinstance(n_points, bool) or n_points <= 0:
         raise ValueError(f"n_points must be a positive int, got {n_points!r}")
@@ -109,8 +142,10 @@ def lookup(n_points: int, n_dims: int, db: Optional[dict] = None) -> LookupResul
 
     key = build_key(n_points, n_dims)
     if key in db:
-        arr = db[key]
-        return LookupSuccess(key=key, shape=tuple(arr.shape), array=arr)
+        raw = db[key]
+        shape = tuple(raw.shape) if hasattr(raw, "shape") else (len(raw), len(raw[0]))
+        rows = _to_list_of_lists(raw)
+        return LookupSuccess(key=key, shape=shape, array=normalize(rows))
 
     points_at_dim = available_points_at_dim(db, n_dims)
     if points_at_dim:

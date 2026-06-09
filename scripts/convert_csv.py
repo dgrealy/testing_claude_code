@@ -1,8 +1,11 @@
 """
-convert_csv.py — Convert a saved LHS CSV to numpy, pandas, or pytorch.
+convert_csv.py — Render a saved LHS CSV as a code snippet string.
 
-Deterministic (D) step. No data transformation — the design comes out exactly
-as it went in.
+Deterministic (D) step. Returns a *string* containing source code that, if
+pasted into a Python REPL, reconstructs the design as a numpy array, a pandas
+DataFrame, or a torch tensor. This module does NOT import numpy / pandas /
+torch and does NOT produce real array objects — the rendering is text only,
+so the skill can run on stdlib Python.
 
 Contract: see ../README.md sections 3.1, 5; SKILL.md "Followup turns".
 """
@@ -10,11 +13,10 @@ Contract: see ../README.md sections 3.1, 5; SKILL.md "Followup turns".
 from __future__ import annotations
 
 import argparse
+import csv
 import sys
 from pathlib import Path
-from typing import Any, Literal, Optional
-
-import numpy as np
+from typing import Literal, Optional
 
 
 Format = Literal["numpy", "pandas", "pytorch"]
@@ -22,7 +24,21 @@ Format = Literal["numpy", "pandas", "pytorch"]
 _VALID_FORMATS = ("numpy", "pandas", "pytorch")
 
 
-def convert(csv_path: Path, fmt: Format) -> Any:
+def _read_csv(csv_path: Path) -> list[list[float]]:
+    with open(csv_path, "r", newline="") as f:
+        reader = csv.reader(f)
+        rows = [[float(v) for v in row] for row in reader if row]
+    return rows
+
+
+def _format_rows(rows: list[list[float]]) -> str:
+    inner = ",\n    ".join(
+        "[" + ", ".join(repr(v) for v in row) + "]" for row in rows
+    )
+    return f"[\n    {inner}\n]"
+
+
+def convert(csv_path: Path, fmt: Format) -> str:
     csv_path = Path(csv_path)
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV not found: {csv_path}")
@@ -31,24 +47,22 @@ def convert(csv_path: Path, fmt: Format) -> Any:
             f"Unsupported format {fmt!r}. Supported: {_VALID_FORMATS}"
         )
 
-    arr = np.loadtxt(csv_path, delimiter=",")
-    if arr.ndim == 1:
-        arr = arr.reshape(-1, 1)
+    rows = _read_csv(csv_path)
+    n_cols = len(rows[0]) if rows else 0
+    body = _format_rows(rows)
 
     if fmt == "numpy":
-        return arr
+        return f"x = np.array({body})"
 
     if fmt == "pandas":
-        import pandas as pd
-        columns = [f"x{i + 1}" for i in range(arr.shape[1])]
-        return pd.DataFrame(arr, columns=columns)
+        columns = [f"x{i + 1}" for i in range(n_cols)]
+        return f"x = pd.DataFrame({body}, columns={columns!r})"
 
-    import torch
-    return torch.from_numpy(arr).float()
+    return f"x = torch.tensor({body}, dtype=torch.float32)"
 
 
 def main(argv: Optional[list[str]] = None) -> int:
-    p = argparse.ArgumentParser(description="Convert an LHS CSV to a tensor format.")
+    p = argparse.ArgumentParser(description="Render an LHS CSV as a code snippet.")
     p.add_argument("--csv-path", type=Path, required=True)
     p.add_argument("--format", choices=list(_VALID_FORMATS), required=True)
     try:
@@ -62,12 +76,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(str(e), file=sys.stderr)
         return 5
 
-    if args.format == "numpy":
-        print(np.array_repr(out))
-    elif args.format == "pandas":
-        print(out.to_string())
-    else:
-        print(repr(out))
+    print(out)
     return 0
 
 
