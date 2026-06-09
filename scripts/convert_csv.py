@@ -33,7 +33,7 @@ def _read_csv(csv_path: Path) -> list[list[float]]:
 
 def _format_rows(rows: list[list[float]]) -> str:
     inner = ",\n    ".join(
-        "[" + ", ".join(repr(v) for v in row) + "]" for row in rows
+        "[" + ", ".join(f"{v:.4f}" for v in row) + "]" for row in rows
     )
     return f"[\n    {inner}\n]"
 

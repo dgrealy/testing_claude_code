@@ -31,7 +31,7 @@ def _write_csv(path: Path, rows: list[list[float]]) -> None:
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
         for row in rows:
-            writer.writerow([f"{v:.18e}" for v in row])
+            writer.writerow([f"{v:.4f}" for v in row])
 
 
 def save(n_points: int, n_dims: int, base_dir: Path = OUTPUT_DIR,

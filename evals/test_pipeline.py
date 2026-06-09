@@ -157,7 +157,7 @@ class TestConvertCSV:
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
             for r in rows:
-                writer.writerow([f"{v:.18e}" for v in r])
+                writer.writerow([f"{v:.4f}" for v in r])
         return path, rows
 
     def test_numpy_is_string_snippet(self, sample_csv):
