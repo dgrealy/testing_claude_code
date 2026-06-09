@@ -1,0 +1,257 @@
+{
+  "_comment": "Each case is the expected contents of the trace JSON after the skill processes the prompt. Fields not listed in 'expect' are not asserted on. Cases are organized by category. Run via evals/run_eval.py.",
+  "_db_assumptions_for_tests": "These cases assume the test fixture mini_lhs.p contains keys: dd2_nn20, dd3_nn40, dd3_nn50, dd3_nn100, dd4_nn50, dd5_nn100, dd7_nn50. n_dims values present: 2, 3, 4, 5, 7. n_dims NOT present: 1, 6, 8, 9, 10, 11+.",
+
+  "cases": [
+    {
+      "id": "happy_basic_numpy",
+      "category": "happy_path",
+      "prompt": "I want a sampling with 40 points in 3 dimensions in a numpy array",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 40, "n_dims": 3, "format": "numpy"},
+        "db_key_attempted": "dd3_nn40",
+        "key_found": true,
+        "output_format_delivered": "numpy",
+        "output_shape": [40, 3]
+      }
+    },
+    {
+      "id": "happy_basic_csv",
+      "category": "happy_path",
+      "prompt": "Latin hypercube, 20 points, 2D, save as csv",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 20, "n_dims": 2, "format": "csv"},
+        "db_key_attempted": "dd2_nn20",
+        "key_found": true,
+        "output_format_delivered": "csv",
+        "csv_path_pattern": "/mnt/user-data/outputs/lhs_dd2_nn20.csv"
+      }
+    },
+    {
+      "id": "happy_basic_pandas",
+      "category": "happy_path",
+      "prompt": "give me an LHS as a pandas DataFrame, 50 points, 4D",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 50, "n_dims": 4, "format": "pandas"},
+        "db_key_attempted": "dd4_nn50",
+        "key_found": true,
+        "output_format_delivered": "pandas",
+        "output_shape": [50, 4]
+      }
+    },
+    {
+      "id": "happy_basic_pytorch",
+      "category": "happy_path",
+      "prompt": "100 samples in 5 dimensions as a pytorch tensor",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 100, "n_dims": 5, "format": "pytorch"},
+        "db_key_attempted": "dd5_nn100",
+        "key_found": true,
+        "output_format_delivered": "pytorch",
+        "output_shape": [100, 5]
+      }
+    },
+    {
+      "id": "happy_no_format_default_csv",
+      "category": "happy_path",
+      "prompt": "I want an LHS with 40 points in 3 dimensions",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 40, "n_dims": 3, "format": null},
+        "db_key_attempted": "dd3_nn40",
+        "key_found": true,
+        "output_format_delivered": "csv",
+        "followup_pending": true,
+        "csv_path_pattern": "/mnt/user-data/outputs/lhs_dd3_nn40.csv"
+      }
+    },
+
+    {
+      "id": "synonym_doe",
+      "category": "synonym_breadth",
+      "prompt": "give me a design of experiment, 20 points, 2D",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 20, "n_dims": 2, "format": null},
+        "db_key_attempted": "dd2_nn20",
+        "key_found": true
+      }
+    },
+    {
+      "id": "synonym_doe_abbrev",
+      "category": "synonym_breadth",
+      "prompt": "I need a DoE with 50 points in 4 dimensions",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 50, "n_dims": 4, "format": null},
+        "db_key_attempted": "dd4_nn50",
+        "key_found": true
+      }
+    },
+    {
+      "id": "synonym_initial_sampling",
+      "category": "synonym_breadth",
+      "prompt": "build me an initial sampling of 50 points in 3D",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 50, "n_dims": 3, "format": null},
+        "db_key_attempted": "dd3_nn50",
+        "key_found": true
+      }
+    },
+    {
+      "id": "synonym_lhs",
+      "category": "synonym_breadth",
+      "prompt": "LHS, 100 points, 5 dimensions",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 100, "n_dims": 5, "format": null},
+        "db_key_attempted": "dd5_nn100",
+        "key_found": true
+      }
+    },
+    {
+      "id": "synonym_design_of_experiment_verbose",
+      "category": "synonym_breadth",
+      "prompt": "I need a design of experiment with 40 sample points across 3 dimensions",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 40, "n_dims": 3, "format": null},
+        "db_key_attempted": "dd3_nn40",
+        "key_found": true
+      }
+    },
+
+    {
+      "id": "words_not_digits",
+      "category": "phrasing_robustness",
+      "prompt": "forty points, three dimensions, as a pandas dataframe",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 40, "n_dims": 3, "format": "pandas"},
+        "db_key_attempted": "dd3_nn40",
+        "key_found": true
+      }
+    },
+    {
+      "id": "order_swapped",
+      "category": "phrasing_robustness",
+      "prompt": "I need 3 dimensions and 40 points for an initial sampling",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 40, "n_dims": 3, "format": null},
+        "db_key_attempted": "dd3_nn40",
+        "key_found": true
+      }
+    },
+    {
+      "id": "compact_notation",
+      "category": "phrasing_robustness",
+      "prompt": "a 40x3 LHS as numpy",
+      "expect": {
+        "clarification_needed": false,
+        "parsed": {"n_points": 40, "n_dims": 3, "format": "numpy"},
+        "db_key_attempted": "dd3_nn40",
+        "key_found": true
+      }
+    },
+
+    {
+      "id": "missing_dims",
+      "category": "clarify_missing_required",
+      "prompt": "give me 30 points for my LHS",
+      "expect": {
+        "clarification_needed": true,
+        "clarification_reason": "missing_n_dims",
+        "missing_fields": ["n_dims"],
+        "parsed": {"n_points": 30, "n_dims": null, "format": null}
+      }
+    },
+    {
+      "id": "missing_points",
+      "category": "clarify_missing_required",
+      "prompt": "give me a 4-dimensional initial sampling",
+      "expect": {
+        "clarification_needed": true,
+        "clarification_reason": "missing_n_points",
+        "missing_fields": ["n_points"],
+        "parsed": {"n_points": null, "n_dims": 4, "format": null}
+      }
+    },
+    {
+      "id": "fully_ambiguous",
+      "category": "clarify_missing_required",
+      "prompt": "I need a sampling for my study",
+      "expect": {
+        "clarification_needed": true,
+        "clarification_reason": "missing_both",
+        "missing_fields": ["n_points", "n_dims"]
+      }
+    },
+
+    {
+      "id": "vague_small",
+      "category": "clarify_vague_size",
+      "prompt": "give me a small LHS in 4 dimensions",
+      "expect": {
+        "clarification_needed": true,
+        "clarification_reason": "vague_size",
+        "missing_fields": ["n_points"],
+        "_critical": "Must NOT silently pick a number for 'small'. Parsed n_points must be null."
+      }
+    },
+    {
+      "id": "vague_a_few",
+      "category": "clarify_vague_size",
+      "prompt": "I want a DoE with a few points in 3 dimensions",
+      "expect": {
+        "clarification_needed": true,
+        "clarification_reason": "vague_size",
+        "missing_fields": ["n_points"]
+      }
+    },
+
+    {
+      "id": "conflicting_numbers",
+      "category": "clarify_conflict",
+      "prompt": "40 points, actually 50, 3 dimensions, numpy",
+      "expect": {
+        "clarification_needed": true,
+        "clarification_reason": "conflicting_input"
+      }
+    },
+
+    {
+      "id": "missing_key_same_dim",
+      "category": "key_not_in_db",
+      "prompt": "75 points, 3 dimensions, numpy",
+      "expect": {
+        "clarification_needed": true,
+        "clarification_reason": "key_not_in_db_same_dim",
+        "parsed": {"n_points": 75, "n_dims": 3, "format": "numpy"},
+        "db_key_attempted": "dd3_nn75",
+        "key_found": false,
+        "nearby_alternatives_at_dim": [40, 50, 100],
+        "_critical": "Must list nearby N values at n_dims=3, sorted by distance to 75. Closest 3: 50, 100, 40."
+      }
+    },
+    {
+      "id": "missing_key_no_dim",
+      "category": "key_not_in_db",
+      "prompt": "40 points, 11 dimensions",
+      "expect": {
+        "clarification_needed": true,
+        "clarification_reason": "key_not_in_db_no_dim",
+        "parsed": {"n_points": 40, "n_dims": 11, "format": null},
+        "db_key_attempted": "dd11_nn40",
+        "key_found": false,
+        "nearby_alternatives": null,
+        "_critical": "Must NOT suggest designs at other dimensions. Must say no designs exist at n_dims=11."
+      }
+    }
+  ]
+}
